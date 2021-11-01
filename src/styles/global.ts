@@ -1,3 +1,6 @@
+import { createGlobalStyle } from "styled-components";
+
+export default createGlobalStyle`
 .App {
   text-align: center;
 }
@@ -46,3 +49,5 @@
 .site-layout .site-layout-background {
   background: #fff;
 }
+
+ `;
