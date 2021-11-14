@@ -49,10 +49,16 @@ const Navigation = () => {
           <Link to="/CercaTreno">Cerca treno</Link>
         </li>
         <li>
-          <Link to="/favorites">Statistiche</Link>
+          <Link to="/stats">Statistiche</Link>
         </li>
         <li>
-          <Link to="/new">Altro</Link>
+          <Link to="/findByStations">FindByStations</Link>
+        </li>
+        <li>
+          <Link to="/addByNumber">AddByNumber</Link>
+        </li>
+        <li>
+          <Link to="/followed">Treni Seguiti</Link>
         </li>
       </NavList>
     </Nav>
