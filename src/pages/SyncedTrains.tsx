@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { Button, Container, TextField } from "@mui/material";
 import { useHistory } from "react-router";
 import { UserTracking } from "../../../trenitalia-bot/src/types";
+import ButtonAsLink from "../components/ButtonAsLink";
 
 const SyncedTrains: React.FC = () => {
   const [followed, setFollowed] = useState<UserTracking[]>([]);
@@ -27,7 +28,19 @@ const SyncedTrains: React.FC = () => {
         {isLoading ? "Loading" : <></>}
         {followed.map((elem) => (
           <div>
-            {elem.classification} {elem.name}
+            <ButtonAsLink
+              onClick={() => {
+                history.push({
+                  pathname: "RiepilogoTreno/train",
+                  search: `?trainNum=${elem.name}&startLocationId=${elem.departureLocationId}`,
+                });
+              }}
+            >
+              {elem.classification} {elem.name}
+            </ButtonAsLink>
+            <span>
+              {elem.departureLocationName}-{elem.arrivalLocationName}
+            </span>
           </div>
         ))}
       </Container>

@@ -1,7 +1,9 @@
 import { Divider } from "@mui/material";
 import React, { useEffect, useState } from "react";
 import { useParams } from "react-router";
-import { convertDate } from "../utils/convertDate";
+import { useLocation } from "react-router-dom";
+import { getDate } from "../utils/getDate";
+import { getTime } from "../utils/getTime";
 
 interface RiepilogoTrenoParams {
   trainNumber: string;
@@ -9,13 +11,18 @@ interface RiepilogoTrenoParams {
 
 const RiepilogoTreno: React.FC = (props) => {
   const params = useParams<RiepilogoTrenoParams>();
+  const search = useLocation().search;
+  const trainNum = new URLSearchParams(search).get("trainNum");
+  const startLocationId = new URLSearchParams(search).get("startLocationId");
   const [data, setData] = useState<any>({});
   const [dataReady, setReady] = useState(false);
   useEffect(() => {
     fetch(
       (process.env.REACT_APP_API_URI +
-        "/trainNumber/" +
-        params.trainNumber) as string
+        "/train?trainNumber=" +
+        trainNum +
+        "&startLocationId=" +
+        startLocationId) as string
     )
       .then((data) => data.json())
       .then((data) => {
@@ -27,7 +34,15 @@ const RiepilogoTreno: React.FC = (props) => {
 
   return (
     <div>
-      <h1>riepilogo treno {data.classification + " " + data.name}</h1>
+      {!dataReady && <div>Caricamento...</div>}
+      {dataReady && (
+        <>
+          <h1>riepilogo treno {data.classification + " " + data.name} </h1>
+          <h2>
+            da {data.departureLocation.name} a {data.arrivalLocation.name}
+          </h2>
+        </>
+      )}
       {dataReady &&
         data.journeys.map((journey: any, index: number) => (
           <>
@@ -48,7 +63,8 @@ const CardTreno: React.FC<{ journey: any; name: string }> = ({
   return (
     <>
       <div>
-        Treno {name} del {convertDate(journey.date)}
+        Treno {name} del {getDate(journey.date)} delle ore{" "}
+        {getTime(journey.date)}
       </div>
       {journey.isCanceled ? (
         <div>treno cancellato</div>

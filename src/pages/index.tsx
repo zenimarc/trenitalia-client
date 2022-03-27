@@ -18,11 +18,7 @@ const Pages = () => {
       <Layout>
         <Route exact path="/" component={Page1} />
         <Route exact path="/CercaTreno" component={CercaTreno} />
-        <Route
-          exact
-          path="/RiepilogoTreno/:trainNumber"
-          component={RiepilogoTreno}
-        />
+        <Route path="/RiepilogoTreno/train" component={RiepilogoTreno} />
         <Route path="/mynotes" component={Page1} />
         <Route path="/findByStations" component={TrainsByStations} />
         <Route path="/addByNumber" component={AddTrainByNumber} />

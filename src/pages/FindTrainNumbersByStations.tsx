@@ -110,7 +110,7 @@ const TrainsByStations: React.FC = () => {
             variant="contained"
             style={{ marginLeft: "1em" }}
             disabled={isLoadingRes ? true : false}
-            onClick={() => {
+            onClick={async () => {
               for (const treno of res) {
                 addTrain(
                   treno.trainName,
