@@ -7,6 +7,7 @@ const CercaTreno: React.FC = () => {
   const [trainNumber, setTrainNumber] = useState("");
   const [startLocationId, setStartLocationId] = useState(null);
   const [data, setData] = useState([]);
+  const [notFound, setNotFound] = useState(false);
   const history = useHistory();
   return (
     <div>
@@ -26,6 +27,10 @@ const CercaTreno: React.FC = () => {
               process.env.REACT_APP_API_URI + "/synced-train/" + trainNumber
             );
             const syncTrains = await reqdata.json();
+            setNotFound(false);
+            if (syncTrains.length === 0) {
+              setNotFound(true);
+            }
             if (syncTrains.length === 1) {
               const { name, departureLocationId } = syncTrains[0];
               history.push({
@@ -60,6 +65,7 @@ const CercaTreno: React.FC = () => {
               }}
             />
           ))}
+        {notFound && <div>Treno non in database</div>}
       </div>
     </div>
   );
