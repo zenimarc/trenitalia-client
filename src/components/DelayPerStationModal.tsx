@@ -19,7 +19,11 @@ const DelayPerStationModal: FC<DelayPerStationModalProps> = ({
 }) => {
   return (
     <Modal
-      title={`Viaggio del ${new Date(journey.date).toLocaleDateString()}`}
+      title={`Viaggio del ${new Date(
+        journey.date
+      ).toLocaleDateString()} (chiuso con ${convertMsToMinutes(
+        journey.delay
+      )}min)`}
       visible={visible}
       onOk={() => closeFn()}
       onCancel={() => closeFn()}
@@ -28,6 +32,8 @@ const DelayPerStationModal: FC<DelayPerStationModalProps> = ({
         <div>
           {journey.stations &&
             journey.stations.map((station: StationDelay, idx: number) => {
+              const isLastStation = () => idx === journey.stations.length - 1;
+              const isFirstStation = () => idx === 0;
               return (
                 <Timeline.Item style={{ paddingBottom: 0 }}>
                   <>
@@ -41,7 +47,11 @@ const DelayPerStationModal: FC<DelayPerStationModalProps> = ({
                         }
                       />
                     )}
-                    <DelayInStation stationDelay={station} />
+                    <DelayInStation
+                      stationDelay={station}
+                      isFirstStation={isFirstStation()}
+                      isLastStation={isLastStation()}
+                    />
                   </>
                 </Timeline.Item>
               );
@@ -68,7 +78,15 @@ type StationDelay = {
   stationId: number;
 };
 
-const DelayInStation = ({ stationDelay }: { stationDelay: StationDelay }) => {
+const DelayInStation = ({
+  stationDelay,
+  isLastStation = false,
+  isFirstStation = false,
+}: {
+  stationDelay: StationDelay;
+  isLastStation?: boolean;
+  isFirstStation?: boolean;
+}) => {
   const {
     actualPlatform,
     arrivalDelay,
@@ -102,14 +120,18 @@ const DelayInStation = ({ stationDelay }: { stationDelay: StationDelay }) => {
           </div>
         </div>
       </div>
-      <SmallDelayDescr
-        descr="ritardo all'arrivo"
-        delay={convertMsToMinutes(arrivalDelay)}
-      />
-      <SmallDelayDescr
-        descr="ritardo in partenza"
-        delay={convertMsToMinutes(departureDelay)}
-      />
+      {!isFirstStation && (
+        <SmallDelayDescr
+          descr="ritardo all'arrivo"
+          delay={convertMsToMinutes(arrivalDelay)}
+        />
+      )}
+      {!isLastStation && (
+        <SmallDelayDescr
+          descr="ritardo in partenza"
+          delay={convertMsToMinutes(departureDelay)}
+        />
+      )}
     </StationDelayDiv>
   );
 };
