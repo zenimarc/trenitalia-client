@@ -9,6 +9,27 @@ const CercaTreno: React.FC = () => {
   const [data, setData] = useState([]);
   const [notFound, setNotFound] = useState(false);
   const history = useHistory();
+
+  const onClickFn = async () => {
+    const reqdata = await fetch(
+      process.env.REACT_APP_API_URI + "/synced-train/" + trainNumber
+    );
+    const syncTrains = await reqdata.json();
+    setNotFound(false);
+    if (syncTrains.length === 0) {
+      setNotFound(true);
+    }
+    if (syncTrains.length === 1) {
+      const { name, departureLocationId } = syncTrains[0];
+      history.push({
+        pathname: "RiepilogoTreno/train",
+        search: `?trainNum=${name}&startLocationId=${departureLocationId}`,
+      });
+    } else {
+      setData(syncTrains);
+    }
+  };
+
   return (
     <div>
       <h1>Cerca treno con numero</h1>
@@ -18,29 +39,14 @@ const CercaTreno: React.FC = () => {
           label="numero treno"
           variant="outlined"
           onChange={(e) => setTrainNumber(e.target.value)}
+          onKeyUp={(e) => {
+            if (e.key === "Enter") onClickFn();
+          }}
         />
         <Button
           variant="contained"
           style={{ marginLeft: "1em" }}
-          onClick={async () => {
-            const reqdata = await fetch(
-              process.env.REACT_APP_API_URI + "/synced-train/" + trainNumber
-            );
-            const syncTrains = await reqdata.json();
-            setNotFound(false);
-            if (syncTrains.length === 0) {
-              setNotFound(true);
-            }
-            if (syncTrains.length === 1) {
-              const { name, departureLocationId } = syncTrains[0];
-              history.push({
-                pathname: "RiepilogoTreno/train",
-                search: `?trainNum=${name}&startLocationId=${departureLocationId}`,
-              });
-            } else {
-              setData(syncTrains);
-            }
-          }}
+          onClick={() => onClickFn()}
         >
           Cerca
         </Button>

@@ -4,6 +4,7 @@ import { Timeline } from "antd";
 import styled from "styled-components";
 import ColoredDelayComponent from "./AverageDelayComponent";
 import convertMsToMinutes from "../utils/convertMsToMinutes";
+import AccessTimeIcon from "@mui/icons-material/AccessTime";
 
 interface DelayPerStationModalProps {
   journey: any;
@@ -28,17 +29,20 @@ const DelayPerStationModal: FC<DelayPerStationModalProps> = ({
           {journey.stations &&
             journey.stations.map((station: StationDelay, idx: number) => {
               return (
-                <Timeline.Item>
-                  {idx >= 1 && (
-                    <div>
-                      accumulato{" "}
-                      {convertMsToMinutes(station.arrivalDelay) -
-                        convertMsToMinutes(
-                          journey.stations[idx - 1].arrivalDelay
-                        )}
-                    </div>
-                  )}
-                  <DelayInStation stationDelay={station} />
+                <Timeline.Item style={{ paddingBottom: 0 }}>
+                  <>
+                    {idx >= 1 && (
+                      <AccumulatedDelay
+                        delay={
+                          convertMsToMinutes(station.arrivalDelay) -
+                          convertMsToMinutes(
+                            journey.stations[idx - 1].arrivalDelay
+                          )
+                        }
+                      />
+                    )}
+                    <DelayInStation stationDelay={station} />
+                  </>
                 </Timeline.Item>
               );
             })}
@@ -64,11 +68,7 @@ type StationDelay = {
   stationId: number;
 };
 
-interface DelayInStationProps {
-  stationDelay: StationDelay;
-}
-
-const DelayInStation: FC<DelayInStationProps> = ({ stationDelay }) => {
+const DelayInStation = ({ stationDelay }: { stationDelay: StationDelay }) => {
   const {
     actualPlatform,
     arrivalDelay,
@@ -102,19 +102,60 @@ const DelayInStation: FC<DelayInStationProps> = ({ stationDelay }) => {
           </div>
         </div>
       </div>
-      <div style={{ display: "flex" }}>
-        <div style={{ width: "40px" }}>
-          <ColoredDelayComponent
-            height="20px"
-            fontSize="12"
-            delay={convertMsToMinutes(arrivalDelay)}
-          />{" "}
-        </div>
-        <span style={{ marginLeft: "0.4em" }}>
-          minuti di ritardo all'arrivo
-        </span>
-      </div>
+      <SmallDelayDescr
+        descr="ritardo all'arrivo"
+        delay={convertMsToMinutes(arrivalDelay)}
+      />
+      <SmallDelayDescr
+        descr="ritardo in partenza"
+        delay={convertMsToMinutes(departureDelay)}
+      />
     </StationDelayDiv>
+  );
+};
+
+const AccumulatedDelay = ({ delay }: { delay: number }) => {
+  return (
+    <div
+      style={{
+        display: "flex",
+        justifyContent: "center",
+      }}
+    >
+      <div style={{ display: "flex", alignItems: "center", padding: "1em" }}>
+        <AccessTimeIcon style={{ marginRight: "0.1em" }} />{" "}
+        {delay >= 0 ? "accumulato" : "recuperato"}{" "}
+        <SmallDelayDescr
+          delay={delay}
+          descr="minuti"
+          absoluteValueMode={true}
+        />
+      </div>
+    </div>
+  );
+};
+
+const SmallDelayDescr = ({
+  delay,
+  descr,
+  absoluteValueMode = false,
+}: {
+  delay: number;
+  descr: string;
+  absoluteValueMode?: boolean;
+}) => {
+  return (
+    <div style={{ display: "flex", alignItems: "center" }}>
+      <div style={{ width: "40px" }}>
+        <ColoredDelayComponent
+          height="20px"
+          fontSize="12"
+          delay={delay}
+          absoluteValuesMode={absoluteValueMode}
+        />{" "}
+      </div>
+      <span style={{ marginLeft: "0.4em" }}>{descr}</span>
+    </div>
   );
 };
 

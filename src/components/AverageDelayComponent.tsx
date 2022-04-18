@@ -3,6 +3,7 @@ import styled from "styled-components";
 
 interface ColoredDelayComponentProps {
   delay: number; //in minutes
+  absoluteValuesMode?: boolean;
   height?: string;
   fontSize?: string;
 }
@@ -11,6 +12,7 @@ const ColoredDelayComponent: FC<ColoredDelayComponentProps> = ({
   delay,
   height,
   fontSize,
+  absoluteValuesMode = false,
 }) => {
   let bgColor = "#fff";
   if (delay < 5) {
@@ -25,7 +27,7 @@ const ColoredDelayComponent: FC<ColoredDelayComponentProps> = ({
 
   return (
     <DelayStyle height={height} fontSize={fontSize} bgColor={bgColor}>
-      {delay}
+      {absoluteValuesMode ? Math.abs(delay) : delay}
     </DelayStyle>
   );
 };
