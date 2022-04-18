@@ -5,9 +5,10 @@ import { DelayDataCharts } from "../../../trenitalia-bot/src/types";
 
 interface DelayChartProps {
   data: DelayDataCharts;
+  setDetailedJourney: Function;
 }
 
-const DelayChart: FC<DelayChartProps> = ({ data }) => {
+const DelayChart: FC<DelayChartProps> = ({ data, setDetailedJourney }) => {
   const config = {
     data,
     xField: "date",
@@ -37,10 +38,27 @@ const DelayChart: FC<DelayChartProps> = ({ data }) => {
     interactions: [
       {
         type: "marker-active",
+        action: () => console.log("ddidid"),
       },
     ],
   };
-  return <Line {...config} />;
+  return (
+    <Line
+      {...config}
+      onReady={(chartInstance) => {
+        chartInstance.on("element:click", (args: any) => {
+          try {
+            console.log(args);
+            const date = args.data.data.date;
+            console.log("dettaglio del ", date);
+            if (date) setDetailedJourney(date);
+          } catch (e) {
+            console.log(e);
+          }
+        });
+      }}
+    />
+  );
 };
 
 export default DelayChart;

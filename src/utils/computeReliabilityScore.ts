@@ -7,7 +7,6 @@ const computeReliabilityScore = (journeys: any) => {
     }
     return journey.delay <= maxDelayForAGoodJourney;
   }).length;
-  console.log(NumOfGoodJourneys, journeys.length);
   return NumOfGoodJourneys / journeys.length;
 };
 

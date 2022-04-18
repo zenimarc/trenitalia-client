@@ -1,11 +1,17 @@
 import React, { FC } from "react";
 import styled from "styled-components";
 
-interface AverageDelayComponentProps {
+interface ColoredDelayComponentProps {
   delay: number; //in minutes
+  height?: string;
+  fontSize?: string;
 }
 
-const AverageDelayComponent: FC<AverageDelayComponentProps> = ({ delay }) => {
+const ColoredDelayComponent: FC<ColoredDelayComponentProps> = ({
+  delay,
+  height,
+  fontSize,
+}) => {
   let bgColor = "#fff";
   if (delay < 5) {
     bgColor = "#99e2b4";
@@ -14,17 +20,28 @@ const AverageDelayComponent: FC<AverageDelayComponentProps> = ({ delay }) => {
   } else if (delay < 30) {
     bgColor = "#ff7900";
   } else {
-    bgColor = "#a0001c";
+    bgColor = "#cc5c6f";
   }
-  const DelayStyle = styled.div`
-    background-color: ${bgColor};
-    height: 100px;
-    font-size: 5em;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-  `;
-  return <DelayStyle>{delay}</DelayStyle>;
+
+  return (
+    <DelayStyle height={height} fontSize={fontSize} bgColor={bgColor}>
+      {delay}
+    </DelayStyle>
+  );
 };
 
-export default AverageDelayComponent;
+export default ColoredDelayComponent;
+
+const DelayStyle = styled.div<{
+  bgColor: string;
+  height?: string;
+  fontSize?: string;
+}>`
+  background-color: ${(props) => props.bgColor};
+  height: ${(props) => props.height || "100px"};
+  font-size: ${(props) => props.fontSize || "5em"};
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  border-radius: 10px;
+`;
