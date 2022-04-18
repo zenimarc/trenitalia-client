@@ -16,7 +16,8 @@ import computeReliabilityScore, {
 } from "../utils/computeReliabilityScore";
 import { InfoCircleOutlined } from "@ant-design/icons";
 import computeAverageDelay from "../utils/computeAverageDelay";
-import AverageDelayComponent from "../components/AverageDelayComponent";
+import ColoredDelayComponent from "../components/AverageDelayComponent";
+import DelayPerStationModal from "../components/DelayPerStationModal";
 
 const { RangePicker } = DatePicker;
 
@@ -30,6 +31,9 @@ const RiepilogoTreno: React.FC = (props) => {
   const trainNum = new URLSearchParams(search).get("trainNum");
   const startLocationId = new URLSearchParams(search).get("startLocationId");
   const [data, setData] = useState<any>({});
+  const [detailedJourney, setDetailedJourney] = useState({});
+  const [showDetailedJourneyModal, setShowDetailedJourneyModal] =
+    useState(false);
   const [dataReady, setReady] = useState(false);
   useEffect(() => {
     fetch(
@@ -124,14 +128,31 @@ const RiepilogoTreno: React.FC = (props) => {
             </Col>
             <Col flex="0 1 300px">
               <Card title="Ritardo medio" style={{ height: "100%" }}>
-                <AverageDelayComponent
+                <ColoredDelayComponent
                   delay={computeAverageDelay(data.journeys)}
                 />
               </Card>
             </Col>
           </Row>
 
-          <DelayChart data={delaysForChart(data.journeys)} />
+          <DelayChart
+            data={delaysForChart(data.journeys)}
+            setDetailedJourney={(date: string) => {
+              const selected = data.journeys.filter((journey: any) => {
+                return delaysForChart([journey])[0].date === date;
+              });
+              setDetailedJourney(selected[0]);
+              console.log(detailedJourney);
+              setShowDetailedJourneyModal(true);
+            }}
+          />
+
+          <DelayPerStationModal
+            journey={detailedJourney}
+            visible={showDetailedJourneyModal}
+            closeFn={() => setShowDetailedJourneyModal(false)}
+          />
+
           {data.journeys.map((journey: any, index: number) => (
             <>
               <CardTreno key={index} journey={journey} name={data.name} />
