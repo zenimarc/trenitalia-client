@@ -1,10 +1,17 @@
 import React, { FC, useEffect, useState } from "react";
-import { Modal, Button } from "antd";
-import { Timeline } from "antd";
+import { Modal, Button, Tooltip } from "antd";
+import Timeline from "@mui/lab/Timeline";
+import TimelineItem from "@mui/lab/TimelineItem";
+import TimelineSeparator from "@mui/lab/TimelineSeparator";
+import TimelineConnector from "@mui/lab/TimelineConnector";
+import TimelineContent from "@mui/lab/TimelineContent";
+import TimelineDot from "@mui/lab/TimelineDot";
 import styled from "styled-components";
 import ColoredDelayComponent from "./AverageDelayComponent";
 import convertMsToMinutes from "../utils/convertMsToMinutes";
 import AccessTimeIcon from "@mui/icons-material/AccessTime";
+import { TimelineOppositeContent } from "@mui/lab";
+import { EvStationSharp } from "@mui/icons-material";
 
 interface DelayPerStationModalProps {
   journey: any;
@@ -29,21 +36,39 @@ const DelayPerStationModal: FC<DelayPerStationModalProps> = ({
           {journey.stations &&
             journey.stations.map((station: StationDelay, idx: number) => {
               return (
-                <Timeline.Item style={{ paddingBottom: 0 }}>
-                  <>
-                    {idx >= 1 && (
-                      <AccumulatedDelay
-                        delay={
-                          convertMsToMinutes(station.arrivalDelay) -
-                          convertMsToMinutes(
-                            journey.stations[idx - 1].arrivalDelay
-                          )
-                        }
-                      />
-                    )}
-                    <DelayInStation stationDelay={station} />
-                  </>
-                </Timeline.Item>
+                <TimelineItem>
+                  <TimelineSeparator>
+                    <TimelineDot variant="outlined" />
+                    <TimelineConnector
+                      children={
+                        idx < journey.stations.length - 1 && (
+                          <Tooltip
+                            placement="bottom"
+                            title={`ritardo accumulato tra ${
+                              station.station.name
+                            } e ${journey.stations[idx + 1].station.name}`}
+                          >
+                            <div style={{ marginTop: "2em" }}>
+                              <AccumulatedDelay
+                                delay={
+                                  convertMsToMinutes(
+                                    journey.stations[idx + 1].arrivalDelay
+                                  ) - convertMsToMinutes(station.arrivalDelay)
+                                }
+                              />
+                            </div>
+                          </Tooltip>
+                        )
+                      }
+                    />
+                  </TimelineSeparator>
+                  <TimelineContent>
+                    <>
+                      <DelayInStation stationDelay={station} />
+                    </>
+                  </TimelineContent>
+                  <TimelineOppositeContent style={{ display: "none" }} />
+                </TimelineItem>
               );
             })}
         </div>
@@ -102,14 +127,12 @@ const DelayInStation = ({ stationDelay }: { stationDelay: StationDelay }) => {
           </div>
         </div>
       </div>
-      <SmallDelayDescr
-        descr="ritardo all'arrivo"
-        delay={convertMsToMinutes(arrivalDelay)}
-      />
-      <SmallDelayDescr
-        descr="ritardo in partenza"
-        delay={convertMsToMinutes(departureDelay)}
-      />
+      <div>
+        partito con {convertMsToMinutes(departureDelay)} minuti di ritardo
+      </div>
+      <div>
+        arrivato con {convertMsToMinutes(arrivalDelay)} minuti di ritardo
+      </div>
     </StationDelayDiv>
   );
 };
@@ -122,14 +145,8 @@ const AccumulatedDelay = ({ delay }: { delay: number }) => {
         justifyContent: "center",
       }}
     >
-      <div style={{ display: "flex", alignItems: "center", padding: "1em" }}>
-        <AccessTimeIcon style={{ marginRight: "0.1em" }} />{" "}
-        {delay >= 0 ? "accumulato" : "recuperato"}{" "}
-        <SmallDelayDescr
-          delay={delay}
-          descr="minuti"
-          absoluteValueMode={true}
-        />
+      <div style={{ display: "flex", alignItems: "center" }}>
+        <SmallDelayDescr delay={delay} descr="" absoluteValueMode={false} />
       </div>
     </div>
   );
