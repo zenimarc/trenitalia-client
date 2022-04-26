@@ -64,34 +64,20 @@ const RiepilogoTreno: React.FC = (props) => {
           </div>
         </>
       )}
-      <div>
-        <FilterBar>
-          <h2 style={{ padding: "1em", margin: 0 }}>Filtri</h2>
-          <Space direction="vertical" size={12}>
-            <RangePicker
-              locale={locale}
-              format="DD/MM/YYYY"
-              onChange={(date) => {
-                // better solution: make useState start end time update only the values, the filter will update another routine
-                if (!date) {
-                  // date not selected, get all
-                  setReady(false);
-                  fetch(
-                    `${process.env.REACT_APP_API_URI}/train?trainNumber=${trainNum}&startLocationId=${startLocationId}` as string
-                  )
-                    .then((data) => data.json())
-                    .then((data) => {
-                      console.log(data);
-                      setData(data);
-                      setReady(true);
-                    });
-                  return;
-                }
-                const startDate = date[0]?.startOf("day").toJSON();
-                const endDate = date[1]?.endOf("day").toJSON();
+
+      <FilterBar>
+        <h2 style={{ padding: "1em", margin: 0 }}>Filtri</h2>
+        <Space direction="vertical" size={12}>
+          <RangePicker
+            locale={locale}
+            format="DD/MM/YYYY"
+            onChange={(date) => {
+              // better solution: make useState start end time update only the values, the filter will update another routine
+              if (!date) {
+                // date not selected, get all
                 setReady(false);
                 fetch(
-                  `${process.env.REACT_APP_API_URI}/train?trainNumber=${trainNum}&startLocationId=${startLocationId}&startDate=${startDate}&endDate=${endDate}` as string
+                  `${process.env.REACT_APP_API_URI}/train?trainNumber=${trainNum}&startLocationId=${startLocationId}` as string
                 )
                   .then((data) => data.json())
                   .then((data) => {
@@ -99,11 +85,25 @@ const RiepilogoTreno: React.FC = (props) => {
                     setData(data);
                     setReady(true);
                   });
-              }}
-            />
-          </Space>
-        </FilterBar>
-      </div>
+                return;
+              }
+              const startDate = date[0]?.startOf("day").toJSON();
+              const endDate = date[1]?.endOf("day").toJSON();
+              setReady(false);
+              fetch(
+                `${process.env.REACT_APP_API_URI}/train?trainNumber=${trainNum}&startLocationId=${startLocationId}&startDate=${startDate}&endDate=${endDate}` as string
+              )
+                .then((data) => data.json())
+                .then((data) => {
+                  console.log(data);
+                  setData(data);
+                  setReady(true);
+                });
+            }}
+          />
+        </Space>
+      </FilterBar>
+
       {dataReady && (
         <>
           <Row>
@@ -154,10 +154,10 @@ const RiepilogoTreno: React.FC = (props) => {
           />
 
           {data.journeys.map((journey: any, index: number) => (
-            <>
-              <CardTreno key={index} journey={journey} name={data.name} />
+            <div key={journey.id}>
+              <CardTreno journey={journey} name={data.name} />
               <Divider style={{ padding: "0.5em" }}></Divider>
-            </>
+            </div>
           ))}
         </>
       )}

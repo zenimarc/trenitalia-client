@@ -35,7 +35,10 @@ const DelayPerStationModal: FC<DelayPerStationModalProps> = ({
               const isLastStation = () => idx === journey.stations.length - 1;
               const isFirstStation = () => idx === 0;
               return (
-                <Timeline.Item style={{ paddingBottom: 0 }}>
+                <Timeline.Item
+                  key={station.stationId}
+                  style={{ paddingBottom: 0 }}
+                >
                   <>
                     {idx >= 1 && (
                       <AccumulatedDelay
