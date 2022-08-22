@@ -19,7 +19,7 @@ import computeAverageDelay from "../utils/computeAverageDelay";
 import ColoredDelayComponent from "../components/AverageDelayComponent";
 import DelayPerStationModal from "../components/DelayPerStationModal";
 
-const { RangePicker } = DatePicker;
+const { RangePicker }: any = DatePicker;
 
 interface RiepilogoTrenoParams {
   trainNumber: string;
@@ -71,7 +71,7 @@ const RiepilogoTreno: React.FC = (props) => {
           <RangePicker
             locale={locale}
             format="DD/MM/YYYY"
-            onChange={(date) => {
+            onChange={(date: any) => {
               // better solution: make useState start end time update only the values, the filter will update another routine
               if (!date) {
                 // date not selected, get all

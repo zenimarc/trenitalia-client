@@ -15,7 +15,7 @@ const filterData = (
 };
 
 const promiseOptions = (inputValue: string) =>
-  new Promise(async (resolve) => {
+  new Promise<{ value: string; label: string }[]>(async (resolve) => {
     if (inputValue.length < 3) return [];
     const data = await fetch(
       (process.env.REACT_APP_API_URI +

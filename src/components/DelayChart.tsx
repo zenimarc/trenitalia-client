@@ -24,9 +24,6 @@ const DelayChart: FC<DelayChartProps> = ({ data, setDetailedJourney }) => {
         lineWidth: 2,
       },
     },
-    tooltip: {
-      showMarkers: false,
-    },
     state: {
       active: {
         style: {
