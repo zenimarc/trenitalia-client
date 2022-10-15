@@ -32,7 +32,7 @@ const SyncedTrains: React.FC = () => {
               onClick={() => {
                 history.push({
                   pathname: "RiepilogoTreno/train",
-                  search: `?trainNum=${elem.name}&startLocationId=${elem.departureLocationId}`,
+                  search: `?trainId=${elem.id}`,
                 });
               }}
             >

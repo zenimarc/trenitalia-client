@@ -29,6 +29,7 @@ const RiepilogoTreno: React.FC = (props) => {
   const params = useParams<RiepilogoTrenoParams>();
   const search = useLocation().search;
   const trainNum = new URLSearchParams(search).get("trainNum");
+  const trainId = new URLSearchParams(search).get("trainId");
   const startLocationId = new URLSearchParams(search).get("startLocationId");
   const [data, setData] = useState<any>({});
   const [detailedJourney, setDetailedJourney] = useState({});
@@ -37,11 +38,7 @@ const RiepilogoTreno: React.FC = (props) => {
   const [dataReady, setReady] = useState(false);
   useEffect(() => {
     fetch(
-      (process.env.REACT_APP_API_URI +
-        "/train?trainNumber=" +
-        trainNum +
-        "&startLocationId=" +
-        startLocationId) as string
+      (process.env.REACT_APP_API_URI + "/train?trainId=" + trainId) as string
     )
       .then((data) => data.json())
       .then((data) => {

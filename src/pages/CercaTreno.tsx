@@ -20,10 +20,10 @@ const CercaTreno: React.FC = () => {
       setNotFound(true);
     }
     if (syncTrains.length === 1) {
-      const { name, departureLocationId } = syncTrains[0];
+      const { name, departureLocationId, id } = syncTrains[0];
       history.push({
         pathname: "RiepilogoTreno/train",
-        search: `?trainNum=${name}&startLocationId=${departureLocationId}`,
+        search: `?trainNum=${name}&startLocationId=${departureLocationId}&trainId=${id}`,
       });
     } else {
       setData(syncTrains);
@@ -66,7 +66,7 @@ const CercaTreno: React.FC = () => {
               onClickFn={() => {
                 history.push({
                   pathname: "RiepilogoTreno/train",
-                  search: `?trainNum=${trainData.name}&startLocationId=${trainData.departureLocation.id}`,
+                  search: `?trainNum=${trainData.name}&startLocationId=${trainData.departureLocation.id}&trainId=${trainData.id}`,
                 });
               }}
             />
