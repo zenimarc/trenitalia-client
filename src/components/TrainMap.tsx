@@ -38,7 +38,10 @@ const TrainMap = () => {
   console.log(stationsList);
   console.log(tratte);
   const position: [number, number] = [41.9, 12.5]; // center the map on Italy
-  const points = stationsList.filter((p) => p.dettZoomStaz[0].pinpointVisible);
+  const pointsRet = stationsList.filter(
+    (p) => p.dettZoomStaz[0].pinpointVisible
+  );
+  const points = removeDuplicates(pointsRet, "codStazione");
 
   // BOUNDS FOR ITALY
   const minLat = 35.0; // Minimum latitude
@@ -84,19 +87,28 @@ const TrainMap = () => {
         await viaggiaTrenoAPI.getTratte();
       setTratte(tratte);
       const tratteDataDict = {};
-      const listaTupleTratte = tratte.map((tratta) => [
+      const filteredTratte = getCopyNoDuplicates(tratte);
+      const listaTupleTratte = filteredTratte.map((tratta) => [
         tratta.trattaAB,
         tratta.trattaBA,
       ]);
-      const tasks = listaTupleTratte.map((tuplaTratte) => {
-        return async () => {
-          await viaggiaTrenoAPI.getDettaglioTratta(
-            tuplaTratte[0],
-            tuplaTratte[1]
-          );
-        };
-      });
+      console.log("sDDDD", tratte.length, filteredTratte.length);
+      const tasks = listaTupleTratte
+        .map((tuplaTratte) => {
+          return async () => {
+            return await viaggiaTrenoAPI.getDettaglioTratta(
+              tuplaTratte[0],
+              tuplaTratte[1]
+            );
+          };
+        })
+        .slice(0, 10);
       console.log(tasks);
+      const limit = pLimit(5);
+      const results = await Promise.all(
+        tasks.map((task) => limit(() => task()))
+      );
+      console.log("risolti: ", results);
     }
 
     fetchData();
@@ -126,7 +138,7 @@ const TrainMap = () => {
           url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager_nolabels/{z}/{x}/{y}{r}.png"
         />
         {points.map((point) => (
-          <>
+          <React.Fragment key={point.codStazione}>
             <Marker
               position={[point.lat, point.lon]}
               icon={getCustomDotIcon(point.codStazione)}
@@ -147,15 +159,21 @@ const TrainMap = () => {
                 icon={getDotLabel(point.nomeCitta)}
               />
             )}
-          </>
+          </React.Fragment>
         ))}
         {tratte.map((line) => (
           <Polyline
+            key={String(line.nodoA) + String(line.nodoB)}
             positions={[
               [line.latitudineA, line.longitudineA],
               [line.latitudineB, line.longitudineB],
             ]}
             color={line.occupata ? "blue" : "gray"}
+            eventHandlers={{
+              click: (e) => {
+                console.log("clicked line", line.trattaAB, line.trattaBA);
+              },
+            }}
           />
         ))}
       </MapContainer>
@@ -164,6 +182,41 @@ const TrainMap = () => {
 };
 
 export default TrainMap;
+
+//function to remove duplicates trattaAB TrattaBA
+const getCopyNoDuplicates = (originalList: ViaggiaTrenoTrattaType[]) => {
+  const filteredList = [];
+  const seenTrattas = new Set();
+
+  for (const item of originalList) {
+    const trattaPair = JSON.stringify([item.trattaAB, item.trattaBA]);
+    if (!seenTrattas.has(trattaPair)) {
+      filteredList.push(item);
+      seenTrattas.add(trattaPair);
+    }
+  }
+  return filteredList;
+};
+
+function removeDuplicates(array: any, field: string) {
+  // Create an object to store the values of the field
+  const values: any = {};
+
+  // Initialize a new array to store the unique items
+  const result = [];
+
+  // Iterate over the array
+  for (const item of array) {
+    // If the field value has not been seen before, add the item to the result array and mark the field value as seen
+    if (!values[item[field]]) {
+      result.push(item);
+      values[item[field]] = true;
+    }
+  }
+
+  // Return the result array
+  return result;
+}
 
 interface DettZoomStaz {
   codiceStazione: string;
