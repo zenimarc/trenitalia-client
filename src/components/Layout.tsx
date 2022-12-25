@@ -34,7 +34,7 @@ const Main = styled.main`
   }
 `;
 
-const Layout: React.FC = ({ children }) => {
+const Layout = ({ children }: { children: React.ReactNode }) => {
   return (
     <React.Fragment>
       <Header />

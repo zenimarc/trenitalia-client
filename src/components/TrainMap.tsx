@@ -97,16 +97,6 @@ const TrainMap = () => {
         };
       });
       console.log(tasks);
-
-      Promise.allSettled(tasks, { concurrency: 6 })
-        .then((results) => {
-          // all tasks are complete
-          console.log(results);
-        })
-        .catch((error) => {
-          // one or more tasks failed
-          console.error(error);
-        });
     }
 
     fetchData();
