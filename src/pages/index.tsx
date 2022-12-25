@@ -8,7 +8,7 @@ import CercaTreno from "./CercaTreno";
 import TrainsByStations from "./FindTrainNumbersByStations";
 
 // import routes
-import Page1 from "./Page1";
+import HomePage from "./HomePage";
 import RiepilogoTreno from "./RiepilogoTreno";
 import SyncedTrains from "./SyncedTrains";
 
@@ -16,19 +16,19 @@ const Pages = () => {
   return (
     <Router>
       <Layout>
-        <Route exact path="/" component={Page1} />
+        <Route exact path="/" component={HomePage} />
         <Route exact path="/CercaTreno" component={CercaTreno} />
         <Route path="/RiepilogoTreno/train" component={RiepilogoTreno} />
-        <Route path="/mynotes" component={Page1} />
+        <Route path="/mynotes" component={HomePage} />
         <Route path="/findByStations" component={TrainsByStations} />
         <Route path="/addByNumber" component={AddTrainByNumber} />
         <Route path="/followed" component={SyncedTrains} />
-        <Route path="/stats" component={Page1} />
-        <Route path="/new" component={Page1} />
-        <Route path="/edit/:id" component={Page1} />
-        <Route path="/note/:id" component={Page1} />
-        <Route path="/signup" component={Page1} />
-        <Route path="/signin" component={Page1} />
+        <Route path="/stats" component={HomePage} />
+        <Route path="/new" component={HomePage} />
+        <Route path="/edit/:id" component={HomePage} />
+        <Route path="/note/:id" component={HomePage} />
+        <Route path="/signup" component={HomePage} />
+        <Route path="/signin" component={HomePage} />
       </Layout>
     </Router>
   );

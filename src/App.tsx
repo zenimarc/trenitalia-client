@@ -4,7 +4,14 @@ import "./App.css";
 import Pages from "./pages";
 
 function App() {
-  return <Pages />;
+  return (
+    <>
+      <head>
+        <link rel="icon" type="image/png" href="/favicon.png" />
+      </head>
+      <Pages />
+    </>
+  );
 }
 
 export default App;
