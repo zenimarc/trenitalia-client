@@ -37,8 +37,8 @@ const TrainMap = () => {
   >({});
   const [showMeteo, setShowMeteo] = useState(false);
   const [showCityLabels, setShowCityLabels] = useState(true);
-  const [tratteNumNameMap, setTratteNumNameMap] = useState<
-    Record<number, string>
+  const [tratteNumNameMap, setTratteNumTrattaMap] = useState<
+    Record<number, ViaggiaTrenoDettaglioTrattaType>
   >({});
   const [datiAggregTratte, setDatiAggregTratte] = useState<DatiAggregType>();
   const [isLoading, setIsLoading] = useState(true);
@@ -121,15 +121,16 @@ const TrainMap = () => {
       );
       console.log("risolti: ", results);
       //console.log("tupletratte: ", listaTupleTratte);
-      const trattaNumNameDict: Record<number, string> = {};
+      const trattaNumNameDict: Record<number, ViaggiaTrenoDettaglioTrattaType> =
+        {};
       const resultsTrainPartMerged = results.reduce((accum, current, idx) => {
         //updating the numTratta - NameTratta disctionary map
-        const nameTratta1 = current[0].tratta;
+        const tratta1 = current[0];
         const numTratta1 = listaTupleTratte[idx][0];
-        const nameTratta2 = current[1].tratta;
+        const tratta2 = current[1];
         const numTratta2 = listaTupleTratte[idx][1];
-        trattaNumNameDict[numTratta1] = nameTratta1;
-        trattaNumNameDict[numTratta2] = nameTratta2;
+        trattaNumNameDict[numTratta1] = tratta1;
+        trattaNumNameDict[numTratta2] = tratta2;
         //console.log(numTratta1, " corrisponde a ", nameTratta1);
         return [...accum, ...current[0].treni, ...current[1].treni];
       }, [] as ViaggiaTrenoDettaglioTrattaTypeInner[]);
@@ -175,7 +176,7 @@ const TrainMap = () => {
         maxCirculatingPerTratta: maxNumberCirculatingPerTratta,
         tratte: tratteDataDict,
       });
-      setTratteNumNameMap(trattaNumNameDict);
+      setTratteNumTrattaMap(trattaNumNameDict);
       setIsLoading(false);
     }
 
@@ -281,7 +282,8 @@ const TrainMap = () => {
                   <TooltipTratta
                     line={line}
                     aggreg={aggregDataCouple}
-                    numNameMap={tratteNumNameMap}
+                    trattaAB={tratteNumNameMap[line.trattaAB]}
+                    trattaBA={tratteNumNameMap[line.trattaBA]}
                   />
                 )
               }
@@ -340,7 +342,7 @@ function calcWeight(maxNum: number, num: number) {
   if (maxNum < 5) {
     maxWeight = 5;
   }
-  return Math.floor((num / maxNum) * maxWeight);
+  return Math.max(Math.floor((num / maxNum) * maxWeight), 2);
 }
 
 function calcAverageIncrementally(
@@ -365,7 +367,7 @@ function aggregateTwoTratte(
     return {
       trains: [],
       averageDelay: 0,
-      numberOfTrains: 1,
+      numberOfTrains: 0,
       totalDelay: 0,
     };
   }
@@ -478,7 +480,7 @@ export interface ViaggiaTrenoTrattaType {
 }
 
 type ViaggiaTrenoDettaglioTrattaRespType = ViaggiaTrenoDettaglioTrattaType[];
-interface ViaggiaTrenoDettaglioTrattaType {
+export interface ViaggiaTrenoDettaglioTrattaType {
   tratta: any;
   treni: ViaggiaTrenoDettaglioTrattaTypeInner[];
 }

@@ -8,7 +8,7 @@ const HomePage: React.FC = () => {
   }, []); // Empty dependency array ensures that the effect is only run on mount
   return (
     <div>
-      <h1>Page 1</h1>
+      <h1>MAPPA SITUAZIONE ATTUALE</h1>
       <TrainMap />
     </div>
   );
