@@ -16,6 +16,9 @@ import iconShadow from "leaflet/dist/images/marker-shadow.png";
 import { ViaggiaTrenoAPI } from "../utils/viaggiatrenoApi";
 import MeteoIcon, { getMeteoIconUrl } from "./MeteoIcon";
 import pLimit from "p-limit";
+import { getColorFromValue } from "../utils/colorPalettes";
+import ColorPaletteLegend from "./ColorPaletteLegend";
+import TooltipTratta from "./TooltipTratta";
 
 let DefaultIcon = L.icon({
   iconUrl: icon,
@@ -34,6 +37,11 @@ const TrainMap = () => {
   >({});
   const [showMeteo, setShowMeteo] = useState(false);
   const [showCityLabels, setShowCityLabels] = useState(true);
+  const [tratteNumNameMap, setTratteNumNameMap] = useState<
+    Record<number, string>
+  >({});
+  const [datiAggregTratte, setDatiAggregTratte] = useState<DatiAggregType>();
+  const [isLoading, setIsLoading] = useState(true);
 
   console.log(stationsList);
   console.log(tratte);
@@ -52,6 +60,11 @@ const TrainMap = () => {
     [minLat, minLon],
     [maxLat, maxLon],
   ];
+
+  //PALETTE FOR DELAYS
+  const minValuePalette = 0;
+  const maxValuePalette = 60;
+  const palette = ["#00ff00", "#ffbb00", "#ff0000"]; // green, yellow, red
 
   const dotIcon = new L.DivIcon({
     className: "dot-icon",
@@ -86,33 +99,92 @@ const TrainMap = () => {
       const tratte: ViaggiaTrenoTrattaType[] =
         await viaggiaTrenoAPI.getTratte();
       setTratte(tratte);
-      const tratteDataDict = {};
       const filteredTratte = getCopyNoDuplicates(tratte);
       const listaTupleTratte = filteredTratte.map((tratta) => [
         tratta.trattaAB,
         tratta.trattaBA,
       ]);
       console.log("sDDDD", tratte.length, filteredTratte.length);
-      const tasks = listaTupleTratte
-        .map((tuplaTratte) => {
-          return async () => {
-            return await viaggiaTrenoAPI.getDettaglioTratta(
-              tuplaTratte[0],
-              tuplaTratte[1]
-            );
-          };
-        })
-        .slice(0, 10);
+      const tasks = listaTupleTratte.map((tuplaTratte) => {
+        return async () => {
+          return await viaggiaTrenoAPI.getDettaglioTratta(
+            tuplaTratte[0],
+            tuplaTratte[1]
+          );
+        };
+      });
+      //.slice(0, 10);
       console.log(tasks);
       const limit = pLimit(5);
-      const results = await Promise.all(
+      const results: ViaggiaTrenoDettaglioTrattaRespType[] = await Promise.all(
         tasks.map((task) => limit(() => task()))
       );
       console.log("risolti: ", results);
+      //console.log("tupletratte: ", listaTupleTratte);
+      const trattaNumNameDict: Record<number, string> = {};
+      const resultsTrainPartMerged = results.reduce((accum, current, idx) => {
+        //updating the numTratta - NameTratta disctionary map
+        const nameTratta1 = current[0].tratta;
+        const numTratta1 = listaTupleTratte[idx][0];
+        const nameTratta2 = current[1].tratta;
+        const numTratta2 = listaTupleTratte[idx][1];
+        trattaNumNameDict[numTratta1] = nameTratta1;
+        trattaNumNameDict[numTratta2] = nameTratta2;
+        //console.log(numTratta1, " corrisponde a ", nameTratta1);
+        return [...accum, ...current[0].treni, ...current[1].treni];
+      }, [] as ViaggiaTrenoDettaglioTrattaTypeInner[]);
+      console.log("mappaTrattaID", trattaNumNameDict);
+      const tratteDataDict: DatiDictAggregPerTrattaType = {};
+      let maxNumberCirculatingPerTratta = 1;
+      for (const trenoInTratta of resultsTrainPartMerged) {
+        // i'm computing the properties of each tratta incrementally while i see trains appartaining to that tratta
+        if (trenoInTratta.tratta in tratteDataDict) {
+          // append trenoInTratta to the array associated with the key in tratteDataDict
+          const { numberOfTrains, totalDelay } =
+            tratteDataDict[trenoInTratta.tratta];
+          const { ritardo: newDelay } = trenoInTratta;
+          tratteDataDict[trenoInTratta.tratta].averageDelay =
+            calcAverageIncrementally(newDelay, totalDelay, numberOfTrains);
+          tratteDataDict[trenoInTratta.tratta].numberOfTrains =
+            numberOfTrains + 1;
+          tratteDataDict[trenoInTratta.tratta].totalDelay =
+            totalDelay + newDelay;
+
+          // update maxProperties numberoftrains
+          if (
+            tratteDataDict[trenoInTratta.tratta].numberOfTrains >
+            maxNumberCirculatingPerTratta
+          ) {
+            maxNumberCirculatingPerTratta =
+              tratteDataDict[trenoInTratta.tratta].numberOfTrains;
+          }
+
+          tratteDataDict[trenoInTratta.tratta].trains.push(trenoInTratta);
+        } else {
+          // create a new key in tratteDataDict and initialize its associated array with trenoInTratta
+          tratteDataDict[trenoInTratta.tratta] = {
+            trains: [trenoInTratta],
+            numberOfTrains: 1,
+            totalDelay: trenoInTratta.ritardo,
+            averageDelay: trenoInTratta.ritardo,
+          };
+        }
+      }
+      console.log("risultato finito div per tratta", tratteDataDict);
+      setDatiAggregTratte({
+        maxCirculatingPerTratta: maxNumberCirculatingPerTratta,
+        tratte: tratteDataDict,
+      });
+      setTratteNumNameMap(trattaNumNameDict);
+      setIsLoading(false);
     }
 
     fetchData();
   }, []);
+
+  if (isLoading) {
+    return <div>Loading...</div>;
+  }
 
   return (
     <>
@@ -133,6 +205,18 @@ const TrainMap = () => {
         minZoom={6}
         maxBounds={bounds}
       >
+        <ColorPaletteLegend
+          minValue={minValuePalette}
+          maxValue={maxValuePalette}
+          palette={palette}
+          style={{
+            position: "absolute",
+            top: 10,
+            right: 20,
+            width: 30,
+            zIndex: 1000,
+          }}
+        />
         <TileLayer
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
           url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager_nolabels/{z}/{x}/{y}{r}.png"
@@ -161,21 +245,54 @@ const TrainMap = () => {
             )}
           </React.Fragment>
         ))}
-        {tratte.map((line) => (
-          <Polyline
-            key={String(line.nodoA) + String(line.nodoB)}
-            positions={[
-              [line.latitudineA, line.longitudineA],
-              [line.latitudineB, line.longitudineB],
-            ]}
-            color={line.occupata ? "blue" : "gray"}
-            eventHandlers={{
-              click: (e) => {
-                console.log("clicked line", line.trattaAB, line.trattaBA);
-              },
-            }}
-          />
-        ))}
+        {tratte.map((line) => {
+          const aggregDataCouple =
+            datiAggregTratte &&
+            aggregateTwoTratte(line.trattaAB, line.trattaBA, datiAggregTratte);
+          const avgDelayTratta = aggregDataCouple?.averageDelay;
+          //console.log(aggregDataCouple);
+          return (
+            <Polyline
+              key={String(line.nodoA) + String(line.nodoB)}
+              positions={[
+                [line.latitudineA, line.longitudineA],
+                [line.latitudineB, line.longitudineB],
+              ]}
+              color={
+                line.occupata
+                  ? getColorFromValue(
+                      aggregDataCouple?.averageDelay || 0,
+                      minValuePalette,
+                      maxValuePalette,
+                      palette
+                    )
+                  : "#9e9e9e"
+              }
+              weight={
+                aggregDataCouple
+                  ? calcWeight(
+                      datiAggregTratte.maxCirculatingPerTratta,
+                      aggregDataCouple.numberOfTrains
+                    )
+                  : 1
+              }
+              children={
+                aggregDataCouple && (
+                  <TooltipTratta
+                    line={line}
+                    aggreg={aggregDataCouple}
+                    numNameMap={tratteNumNameMap}
+                  />
+                )
+              }
+              eventHandlers={{
+                click: (e) => {
+                  console.log("clicked line", line.trattaAB, line.trattaBA);
+                },
+              }}
+            />
+          );
+        })}
       </MapContainer>
     </>
   );
@@ -216,6 +333,72 @@ function removeDuplicates(array: any, field: string) {
 
   // Return the result array
   return result;
+}
+
+function calcWeight(maxNum: number, num: number) {
+  let maxWeight = 10;
+  if (maxNum < 5) {
+    maxWeight = 5;
+  }
+  return Math.floor((num / maxNum) * maxWeight);
+}
+
+function calcAverageIncrementally(
+  newValue: number,
+  currentSum: number,
+  currentCount: number
+) {
+  currentSum += newValue;
+  currentCount++;
+  return currentSum / currentCount;
+}
+
+function aggregateTwoTratte(
+  tratta1: number,
+  tratta2: number,
+  aggregate: DatiAggregType
+): DatiAggregPerTrattaType {
+  const tratta1Dati = aggregate.tratte[tratta1];
+  const tratta2Dati = aggregate.tratte[tratta2];
+  if (!tratta1Dati && !tratta2Dati) {
+    //console.log("problemi", tratta1, tratta2, aggregate);
+    return {
+      trains: [],
+      averageDelay: 0,
+      numberOfTrains: 1,
+      totalDelay: 0,
+    };
+  }
+  if (!tratta1Dati) {
+    return tratta2Dati;
+  }
+  if (!tratta2Dati) {
+    return tratta1Dati;
+  }
+
+  return {
+    trains: [...tratta1Dati.trains, ...tratta2Dati.trains],
+    averageDelay:
+      (tratta1Dati.averageDelay * tratta1Dati.numberOfTrains +
+        tratta2Dati.averageDelay * tratta2Dati.numberOfTrains) /
+      (tratta1Dati.numberOfTrains + tratta2Dati.numberOfTrains),
+    numberOfTrains: tratta1Dati.numberOfTrains + tratta2Dati.numberOfTrains,
+    totalDelay: tratta1Dati.totalDelay + tratta2Dati.totalDelay,
+  };
+}
+
+interface DatiAggregType {
+  maxCirculatingPerTratta: number;
+  tratte: DatiDictAggregPerTrattaType;
+}
+
+type DatiDictAggregPerTrattaType = Record<number, DatiAggregPerTrattaType>;
+
+export interface DatiAggregPerTrattaType {
+  trains: ViaggiaTrenoDettaglioTrattaTypeInner[];
+  averageDelay: number;
+  numberOfTrains: number;
+  totalDelay: number;
 }
 
 interface DettZoomStaz {
@@ -280,7 +463,7 @@ interface ViaggiaTrenoMeteoType {
   domaniTempoSera: number;
 }
 
-interface ViaggiaTrenoTrattaType {
+export interface ViaggiaTrenoTrattaType {
   nodoA: string;
   nodoB: string;
   trattaAB: number;
@@ -292,4 +475,81 @@ interface ViaggiaTrenoTrattaType {
   latitudineB: number;
   longitudineB: number;
   occupata: boolean;
+}
+
+type ViaggiaTrenoDettaglioTrattaRespType = ViaggiaTrenoDettaglioTrattaType[];
+interface ViaggiaTrenoDettaglioTrattaType {
+  tratta: any;
+  treni: ViaggiaTrenoDettaglioTrattaTypeInner[];
+}
+
+interface ViaggiaTrenoDettaglioTrattaTypeInner {
+  numeroTreno: number;
+  categoria: string;
+  categoriaDescrizione: any;
+  origine: string;
+  codOrigine: string;
+  destinazione: string;
+  codDestinazione: string;
+  origineEstera: any;
+  destinazioneEstera: any;
+  oraPartenzaEstera: any;
+  oraArrivoEstera: any;
+  tratta: number;
+  regione: number;
+  origineZero: any;
+  destinazioneZero: any;
+  orarioPartenzaZero: any;
+  orarioArrivoZero: any;
+  circolante: boolean;
+  codiceCliente: number;
+  binarioEffettivoArrivoCodice: any;
+  binarioEffettivoArrivoDescrizione: any;
+  binarioEffettivoArrivoTipo: any;
+  binarioProgrammatoArrivoCodice: any;
+  binarioProgrammatoArrivoDescrizione: any;
+  binarioEffettivoPartenzaCodice: any;
+  binarioEffettivoPartenzaDescrizione: any;
+  binarioEffettivoPartenzaTipo: any;
+  binarioProgrammatoPartenzaCodice: any;
+  binarioProgrammatoPartenzaDescrizione: any;
+  subTitle: any;
+  esisteCorsaZero: any;
+  orientamento: any;
+  inStazione: boolean;
+  haCambiNumero: boolean;
+  nonPartito: boolean;
+  provvedimento: number;
+  riprogrammazione: string;
+  orarioPartenza: number;
+  orarioArrivo: number;
+  stazionePartenza: any;
+  stazioneArrivo: any;
+  statoTreno: any;
+  corrispondenze: any;
+  servizi: any;
+  ritardo: number;
+  tipoProdotto: string;
+  compOrarioPartenzaZeroEffettivo: string;
+  compOrarioArrivoZeroEffettivo: any;
+  compOrarioPartenzaZero: string;
+  compOrarioArrivoZero: any;
+  compOrarioArrivo: string;
+  compOrarioPartenza: string;
+  compNumeroTreno: string;
+  compOrientamento: string[];
+  compTipologiaTreno: string;
+  compClassRitardoTxt: string;
+  compClassRitardoLine: string;
+  compImgRitardo2: string;
+  compImgRitardo: string;
+  compRitardo: string[];
+  compRitardoAndamento: string[];
+  compInStazionePartenza: string[];
+  compInStazioneArrivo: string[];
+  compOrarioEffettivoArrivo: string;
+  compDurata: string;
+  compImgCambiNumerazione: string;
+  materiale_label: any;
+  dataPartenzaTreno: number;
 }
