@@ -13,8 +13,10 @@ const TooltipTratta = ({ line, aggreg, numNameMap }: TooltipTrattaProps) => {
     <Popup>
       <h1>{numNameMap[line.trattaAB]}</h1>
       <h1>{numNameMap[line.trattaBA]}</h1>
-      <div>ritardo totale circolante sulla tratta: {aggreg.totalDelay}min</div>
-      <div>ritardo medio treni sulla tratta: {aggreg.averageDelay}min</div>
+      <div>ritardo totale circolante sulla tratta: {aggreg.totalDelay} min</div>
+      <div>
+        ritardo medio treni sulla tratta: {aggreg.averageDelay.toFixed(2)} min
+      </div>
       <div>tot treni circolanti sulla tratta: {aggreg.numberOfTrains}</div>
     </Popup>
   );
