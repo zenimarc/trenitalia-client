@@ -1,5 +1,4 @@
 import React, { useEffect, useState } from "react";
-import styled from "styled-components";
 import { Row, Space, Switch, Card, Col } from "antd";
 import {
   MapContainer,
@@ -61,7 +60,7 @@ const TrainMap = () => {
 
   // BOUNDS FOR ITALY
   const minLat = 35.0; // Minimum latitude
-  const maxLat = 48.0; // Maximum latitude
+  const maxLat = 55.0; // Maximum latitude
   const minLon = 5.0; // Minimum longitude
   const maxLon = 20.0; // Maximum longitude
   const bounds: [[number, number], [number, number]] = [

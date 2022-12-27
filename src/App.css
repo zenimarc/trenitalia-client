@@ -60,3 +60,7 @@ html {
 .site-layout .site-layout-background {
   background: #fff;
 }
+
+.d-none {
+  display: none;
+}

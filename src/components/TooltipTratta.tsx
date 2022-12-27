@@ -23,33 +23,35 @@ const TooltipTratta = ({
   return (
     <Popup>
       <h1>{trattaAB.tratta}</h1>
-      {trattaAB.trains.map((treno) => (
-        <div key={treno.numeroTreno}>
-          {treno.categoria +
-            " " +
-            treno.origine +
-            " - " +
-            treno.destinazione +
-            " rit:" +
-            treno.ritardo +
-            " min"}
-        </div>
-      ))}
+      <ul>
+        {trattaAB.trains.map((treno) => (
+          <li key={treno.numeroTreno}>
+            {treno.compNumeroTreno +
+              " " +
+              treno.origine +
+              " - " +
+              treno.destinazione +
+              " rit:" +
+              treno.ritardo +
+              " min"}
+          </li>
+        ))}
+      </ul>
       <h1>{trattaBA.tratta}</h1>
-      {trattaBA.trains.map((treno) => (
-        <div key={treno.numeroTreno}>
-          {treno.categoria +
-            " " +
-            treno.numeroTreno +
-            " " +
-            treno.origine +
-            " - " +
-            treno.destinazione +
-            " rit:" +
-            treno.ritardo +
-            " min"}
-        </div>
-      ))}
+      <ul>
+        {trattaBA.trains.map((treno) => (
+          <li key={treno.numeroTreno}>
+            {treno.compNumeroTreno +
+              " " +
+              treno.origine +
+              " - " +
+              treno.destinazione +
+              " rit:" +
+              treno.ritardo +
+              " min"}
+          </li>
+        ))}
+      </ul>
       <RiassuntoTratta
         averageDelay={aggreg.averageDelay}
         numberOfTrains={aggreg.numberOfTrains}

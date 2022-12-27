@@ -130,6 +130,7 @@ const RiepilogoTreno: React.FC = (props) => {
             display: "flex",
             flexDirection: "row",
             alignItems: "center",
+            minWidth: 300,
           }}
         >
           <h2 style={{ padding: "1em", margin: 0 }}>Filtri</h2>
@@ -156,7 +157,9 @@ const RiepilogoTreno: React.FC = (props) => {
           </div>
         </div>
 
-        <div style={{ flex: 1, marginLeft: "1em" }}>
+        <div
+          style={{ flex: 1, marginLeft: "1em", minWidth: 200, maxWidth: 400 }}
+        >
           <div>giorni della settimana considerati</div>
           <Multiselect
             handleChangeFn={(value) => {
