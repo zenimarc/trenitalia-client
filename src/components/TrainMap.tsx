@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import styled from "styled-components";
-import { Row, Space, Switch } from "antd";
+import { Row, Space, Switch, Card, Col } from "antd";
 import {
   MapContainer,
   Marker,
@@ -18,7 +18,7 @@ import MeteoIcon, { getMeteoIconUrl } from "./MeteoIcon";
 import pLimit from "p-limit";
 import { getColorFromValue } from "../utils/colorPalettes";
 import ColorPaletteLegend from "./ColorPaletteLegend";
-import TooltipTratta from "./TooltipTratta";
+import TooltipTratta, { RiassuntoTratta } from "./TooltipTratta";
 
 let DefaultIcon = L.icon({
   iconUrl: icon,
@@ -45,11 +45,14 @@ const TrainMap = () => {
     bestDelayTratta: undefined,
     worstDelayTratta: undefined,
     mostTrafficatedTratta: undefined,
+    ritardoTotaleCircolante: 0,
+    numeroTreniCircolanti: 0,
+    ritardoMedioCircolante: 0,
   });
   const [isLoading, setIsLoading] = useState(true);
 
-  console.log("stationlist: ", stationsList);
-  console.log("tratte", tratte);
+  //console.log("stationlist: ", stationsList);
+  //console.log("tratte", tratte);
   const position: [number, number] = [41.9, 12.5]; // center the map on Italy
   const pointsRet = stationsList.filter(
     (p) => p.dettZoomStaz[0].pinpointVisible
@@ -110,12 +113,12 @@ const TrainMap = () => {
         tratta.trattaBA,
       ]);
       const listaTupleTratte = removeCouplesDuplicates(listaTupleTratteOrig);
-      console.log(
+      /* console.log(
         "rimosso couple duplicates tupletratte",
         listaTupleTratteOrig.length,
         listaTupleTratte.length
-      );
-      console.log("sDDDD", tratte.length, filteredTratte.length);
+      ); */
+      //console.log("sDDDD", tratte.length, filteredTratte.length);
       const tasks = listaTupleTratte.map((tuplaTratte) => {
         return async () => {
           return await viaggiaTrenoAPI.getDettaglioTratta(
@@ -125,13 +128,13 @@ const TrainMap = () => {
         };
       });
       //.slice(0, 10);
-      console.log("tasks", tasks);
+      //console.log("tasks", tasks);
       const limit = pLimit(5);
       const results: ViaggiaTrenoDettaglioTrattaRespType[] = await Promise.all(
         tasks.map((task) => limit(() => task()))
       );
-      console.log("risolti: ", results);
-      console.log("tupletratte: ", listaTupleTratte);
+      /* console.log("risolti: ", results);
+      console.log("tupletratte: ", listaTupleTratte); */
       const trattaNumNameDict: Record<number, ViaggiaTrenoDettaglioTrattaType> =
         {};
       const resultsTrainPartMerged = results.reduce((accum, current, idx) => {
@@ -145,8 +148,8 @@ const TrainMap = () => {
         //console.log(numTratta1, " corrisponde a ", nameTratta1);
         return [...accum, ...current[0].treni, ...current[1].treni];
       }, [] as ViaggiaTrenoDettaglioTrattaTypeInner[]);
-      console.log("mappaTrattaID", trattaNumNameDict);
-      console.log("resultsTrainPartMerged", resultsTrainPartMerged);
+      /* console.log("mappaTrattaID", trattaNumNameDict);
+      console.log("resultsTrainPartMerged", resultsTrainPartMerged); */
       const tratteDataDict: DatiDictAggregPerTrattaType = {};
       let maxNumberCirculatingPerTratta = 1;
       for (const trenoInTratta of resultsTrainPartMerged) {
@@ -182,7 +185,7 @@ const TrainMap = () => {
           };
         }
       }
-      console.log("risultato finito div per tratta", tratteDataDict);
+      //console.log("risultato finito div per tratta", tratteDataDict);
       setDatiAggregTratte({
         maxCirculatingPerTratta: maxNumberCirculatingPerTratta,
         tratte: tratteDataDict,
@@ -203,6 +206,51 @@ const TrainMap = () => {
 
   return (
     <>
+      <Row>
+        <Col>
+          <Card title="Tratta più puntuale: " style={{ width: 300 }}>
+            <h2>{leaderBoard.bestDelayTratta?.tratta}</h2>
+            <RiassuntoTratta
+              averageDelay={leaderBoard.bestDelayTratta?.averageDelay}
+              numberOfTrains={leaderBoard.bestDelayTratta?.numberOfTrains}
+              totalDelay={leaderBoard.bestDelayTratta?.totalDelay}
+            />
+          </Card>
+        </Col>
+        <Col>
+          <Card title="Tratta maggior ritardo: " style={{ width: 300 }}>
+            <h2>{leaderBoard.worstDelayTratta?.tratta}</h2>
+            <RiassuntoTratta
+              averageDelay={leaderBoard.worstDelayTratta?.averageDelay}
+              numberOfTrains={leaderBoard.worstDelayTratta?.numberOfTrains}
+              totalDelay={leaderBoard.worstDelayTratta?.totalDelay}
+            />
+          </Card>
+        </Col>
+        <Col>
+          <Card title="Tratta più trafficata: " style={{ width: 300 }}>
+            <h2>{leaderBoard.mostTrafficatedTratta?.tratta}</h2>
+            <RiassuntoTratta
+              averageDelay={leaderBoard.mostTrafficatedTratta?.averageDelay}
+              numberOfTrains={leaderBoard.mostTrafficatedTratta?.numberOfTrains}
+              totalDelay={leaderBoard.mostTrafficatedTratta?.totalDelay}
+            />
+          </Card>
+        </Col>
+        <Col>
+          <Card title="Global stats" style={{ width: 300 }}>
+            <p>
+              Totale ritardo circolante: {leaderBoard.ritardoTotaleCircolante}{" "}
+              min
+            </p>
+            <p>
+              Ritardo medio circolante:{" "}
+              {leaderBoard.ritardoMedioCircolante.toFixed(2)} min
+            </p>
+            <p>tot treni circolanti: {leaderBoard.numeroTreniCircolanti}</p>
+          </Card>
+        </Col>
+      </Row>
       <Row>
         <div style={{ display: "flex", alignItems: "center" }}>
           <div style={{ marginRight: 10 }}>Attiva meteo</div>
@@ -423,6 +471,9 @@ function computeStatsAndAddPlusLeaderboard(
 ) {
   const enrichedData: Record<number, DatiAggregPerTrattaTypePlusTrattaName> =
     {};
+
+  let ritardoTotaleCircolante = 0;
+  let numeroTreniCircolanti = 0;
   let maxDelay = -Infinity;
   let minDelay = Infinity;
   let maxNumTrains = 0;
@@ -430,6 +481,9 @@ function computeStatsAndAddPlusLeaderboard(
     bestDelayTratta: undefined,
     mostTrafficatedTratta: undefined,
     worstDelayTratta: undefined,
+    ritardoTotaleCircolante: 0,
+    ritardoMedioCircolante: 0,
+    numeroTreniCircolanti: 0,
   };
 
   for (const key in numTrattaMap) {
@@ -440,7 +494,8 @@ function computeStatsAndAddPlusLeaderboard(
       numberOfTrains += 1;
     }
     const avgDelay = totalDelay / numberOfTrains;
-
+    ritardoTotaleCircolante += totalDelay;
+    numeroTreniCircolanti += numberOfTrains;
     enrichedData[key] = {
       ...numTrattaMap[key],
       trains: numTrattaMap[key].treni,
@@ -461,6 +516,10 @@ function computeStatsAndAddPlusLeaderboard(
       maxNumTrains = numberOfTrains;
     }
   }
+  leaderBoard.ritardoTotaleCircolante = ritardoTotaleCircolante;
+  leaderBoard.numeroTreniCircolanti = numeroTreniCircolanti;
+  leaderBoard.ritardoMedioCircolante =
+    ritardoTotaleCircolante / numeroTreniCircolanti;
   return { enrichedData, leaderBoard };
 }
 
@@ -468,6 +527,9 @@ interface LeaderBoardType {
   bestDelayTratta: DatiAggregPerTrattaTypePlusTrattaName | undefined;
   worstDelayTratta: DatiAggregPerTrattaTypePlusTrattaName | undefined;
   mostTrafficatedTratta: DatiAggregPerTrattaTypePlusTrattaName | undefined;
+  ritardoTotaleCircolante: number;
+  ritardoMedioCircolante: number;
+  numeroTreniCircolanti: number;
 }
 interface DatiAggregType {
   maxCirculatingPerTratta: number;

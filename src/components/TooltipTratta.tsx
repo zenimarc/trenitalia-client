@@ -40,6 +40,8 @@ const TooltipTratta = ({
         <div key={treno.numeroTreno}>
           {treno.categoria +
             " " +
+            treno.numeroTreno +
+            " " +
             treno.origine +
             " - " +
             treno.destinazione +
@@ -48,15 +50,37 @@ const TooltipTratta = ({
             " min"}
         </div>
       ))}
+      <RiassuntoTratta
+        averageDelay={aggreg.averageDelay}
+        numberOfTrains={aggreg.numberOfTrains}
+        totalDelay={aggreg.totalDelay}
+      />
+    </Popup>
+  );
+};
+
+interface RiassuntoTrattaProps {
+  totalDelay: number | undefined;
+  averageDelay: number | undefined;
+  numberOfTrains: number | undefined;
+}
+export const RiassuntoTratta = ({
+  totalDelay,
+  averageDelay,
+  numberOfTrains,
+}: RiassuntoTrattaProps) => {
+  return (
+    <>
       <div style={{ marginTop: 10, fontWeight: 600 }}>
         Tratta Riassunto Generale
       </div>
-      <div>ritardo totale circolante sulla tratta: {aggreg.totalDelay} min</div>
+      <div>ritardo totale circolante sulla tratta: {totalDelay} min</div>
       <div>
-        ritardo medio treni sulla tratta: {aggreg.averageDelay.toFixed(2)} min
+        ritardo medio treni sulla tratta:{" "}
+        {averageDelay && averageDelay.toFixed(2)} min
       </div>
-      <div>tot treni circolanti sulla tratta: {aggreg.numberOfTrains}</div>
-    </Popup>
+      <div>tot treni circolanti sulla tratta: {numberOfTrains}</div>
+    </>
   );
 };
 
