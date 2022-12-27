@@ -38,13 +38,18 @@ const TrainMap = () => {
   const [showMeteo, setShowMeteo] = useState(false);
   const [showCityLabels, setShowCityLabels] = useState(true);
   const [tratteNumNameMap, setTratteNumTrattaMap] = useState<
-    Record<number, ViaggiaTrenoDettaglioTrattaType>
+    Record<number, DatiAggregPerTrattaTypePlusTrattaName>
   >({});
   const [datiAggregTratte, setDatiAggregTratte] = useState<DatiAggregType>();
+  const [leaderBoard, setLeaderBoard] = useState<LeaderBoardType>({
+    bestDelayTratta: undefined,
+    worstDelayTratta: undefined,
+    mostTrafficatedTratta: undefined,
+  });
   const [isLoading, setIsLoading] = useState(true);
 
-  console.log(stationsList);
-  console.log(tratte);
+  console.log("stationlist: ", stationsList);
+  console.log("tratte", tratte);
   const position: [number, number] = [41.9, 12.5]; // center the map on Italy
   const pointsRet = stationsList.filter(
     (p) => p.dettZoomStaz[0].pinpointVisible
@@ -100,10 +105,16 @@ const TrainMap = () => {
         await viaggiaTrenoAPI.getTratte();
       setTratte(tratte);
       const filteredTratte = getCopyNoDuplicates(tratte);
-      const listaTupleTratte = filteredTratte.map((tratta) => [
+      const listaTupleTratteOrig = filteredTratte.map((tratta) => [
         tratta.trattaAB,
         tratta.trattaBA,
       ]);
+      const listaTupleTratte = removeCouplesDuplicates(listaTupleTratteOrig);
+      console.log(
+        "rimosso couple duplicates tupletratte",
+        listaTupleTratteOrig.length,
+        listaTupleTratte.length
+      );
       console.log("sDDDD", tratte.length, filteredTratte.length);
       const tasks = listaTupleTratte.map((tuplaTratte) => {
         return async () => {
@@ -114,13 +125,13 @@ const TrainMap = () => {
         };
       });
       //.slice(0, 10);
-      console.log(tasks);
+      console.log("tasks", tasks);
       const limit = pLimit(5);
       const results: ViaggiaTrenoDettaglioTrattaRespType[] = await Promise.all(
         tasks.map((task) => limit(() => task()))
       );
       console.log("risolti: ", results);
-      //console.log("tupletratte: ", listaTupleTratte);
+      console.log("tupletratte: ", listaTupleTratte);
       const trattaNumNameDict: Record<number, ViaggiaTrenoDettaglioTrattaType> =
         {};
       const resultsTrainPartMerged = results.reduce((accum, current, idx) => {
@@ -135,6 +146,7 @@ const TrainMap = () => {
         return [...accum, ...current[0].treni, ...current[1].treni];
       }, [] as ViaggiaTrenoDettaglioTrattaTypeInner[]);
       console.log("mappaTrattaID", trattaNumNameDict);
+      console.log("resultsTrainPartMerged", resultsTrainPartMerged);
       const tratteDataDict: DatiDictAggregPerTrattaType = {};
       let maxNumberCirculatingPerTratta = 1;
       for (const trenoInTratta of resultsTrainPartMerged) {
@@ -150,7 +162,6 @@ const TrainMap = () => {
             numberOfTrains + 1;
           tratteDataDict[trenoInTratta.tratta].totalDelay =
             totalDelay + newDelay;
-
           // update maxProperties numberoftrains
           if (
             tratteDataDict[trenoInTratta.tratta].numberOfTrains >
@@ -176,7 +187,10 @@ const TrainMap = () => {
         maxCirculatingPerTratta: maxNumberCirculatingPerTratta,
         tratte: tratteDataDict,
       });
-      setTratteNumTrattaMap(trattaNumNameDict);
+      const { enrichedData: trattaNumNameDictEnriched, leaderBoard } =
+        computeStatsAndAddPlusLeaderboard(trattaNumNameDict);
+      setTratteNumTrattaMap(trattaNumNameDictEnriched);
+      setLeaderBoard(leaderBoard);
       setIsLoading(false);
     }
 
@@ -389,12 +403,81 @@ function aggregateTwoTratte(
   };
 }
 
+function removeCouplesDuplicates<T>(lst: T[][]): T[][] {
+  return lst.reduce((acc: T[][], curr: T[]) => {
+    if (!acc.includes(curr)) {
+      acc.push(curr);
+    }
+    return acc;
+  }, []);
+}
+
+/* function calcLeaderboard(aggregatedTratta: DatiAggregType): LeaderBoardType {
+  Object.values(aggregatedTratta.tratte).reduce((acc, currentVal, index) => {
+    const newAcc = { ...acc };
+  }, {});
+} */
+
+function computeStatsAndAddPlusLeaderboard(
+  numTrattaMap: Record<number, ViaggiaTrenoDettaglioTrattaType>
+) {
+  const enrichedData: Record<number, DatiAggregPerTrattaTypePlusTrattaName> =
+    {};
+  let maxDelay = -Infinity;
+  let minDelay = Infinity;
+  let maxNumTrains = 0;
+  const leaderBoard: LeaderBoardType = {
+    bestDelayTratta: undefined,
+    mostTrafficatedTratta: undefined,
+    worstDelayTratta: undefined,
+  };
+
+  for (const key in numTrattaMap) {
+    let totalDelay = 0;
+    let numberOfTrains = 0;
+    for (const train of numTrattaMap[key].treni) {
+      totalDelay += train.ritardo;
+      numberOfTrains += 1;
+    }
+    const avgDelay = totalDelay / numberOfTrains;
+
+    enrichedData[key] = {
+      ...numTrattaMap[key],
+      trains: numTrattaMap[key].treni,
+      averageDelay: avgDelay,
+      numberOfTrains,
+      totalDelay,
+    };
+    if (totalDelay > maxDelay) {
+      leaderBoard.worstDelayTratta = enrichedData[key];
+      maxDelay = totalDelay;
+    }
+    if (totalDelay < minDelay) {
+      leaderBoard.bestDelayTratta = enrichedData[key];
+      minDelay = totalDelay;
+    }
+    if (numberOfTrains > maxNumTrains) {
+      leaderBoard.mostTrafficatedTratta = enrichedData[key];
+      maxNumTrains = numberOfTrains;
+    }
+  }
+  return { enrichedData, leaderBoard };
+}
+
+interface LeaderBoardType {
+  bestDelayTratta: DatiAggregPerTrattaTypePlusTrattaName | undefined;
+  worstDelayTratta: DatiAggregPerTrattaTypePlusTrattaName | undefined;
+  mostTrafficatedTratta: DatiAggregPerTrattaTypePlusTrattaName | undefined;
+}
 interface DatiAggregType {
   maxCirculatingPerTratta: number;
   tratte: DatiDictAggregPerTrattaType;
 }
 
 type DatiDictAggregPerTrattaType = Record<number, DatiAggregPerTrattaType>;
+export type DatiAggregPerTrattaTypePlusTrattaName = DatiAggregPerTrattaType & {
+  tratta: string;
+};
 
 export interface DatiAggregPerTrattaType {
   trains: ViaggiaTrenoDettaglioTrattaTypeInner[];

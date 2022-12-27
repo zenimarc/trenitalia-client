@@ -2,6 +2,7 @@ import React from "react";
 import { Popup } from "react-leaflet";
 import {
   DatiAggregPerTrattaType,
+  DatiAggregPerTrattaTypePlusTrattaName,
   ViaggiaTrenoDettaglioTrattaType,
   ViaggiaTrenoTrattaType,
 } from "./TrainMap";
@@ -9,8 +10,8 @@ import {
 interface TooltipTrattaProps {
   line: ViaggiaTrenoTrattaType;
   aggreg: DatiAggregPerTrattaType;
-  trattaAB: ViaggiaTrenoDettaglioTrattaType;
-  trattaBA: ViaggiaTrenoDettaglioTrattaType;
+  trattaAB: DatiAggregPerTrattaTypePlusTrattaName;
+  trattaBA: DatiAggregPerTrattaTypePlusTrattaName;
 }
 
 const TooltipTratta = ({
@@ -22,9 +23,11 @@ const TooltipTratta = ({
   return (
     <Popup>
       <h1>{trattaAB.tratta}</h1>
-      {trattaAB.treni.map((treno) => (
+      {trattaAB.trains.map((treno) => (
         <div key={treno.numeroTreno}>
-          {treno.origine +
+          {treno.categoria +
+            " " +
+            treno.origine +
             " - " +
             treno.destinazione +
             " rit:" +
@@ -33,9 +36,11 @@ const TooltipTratta = ({
         </div>
       ))}
       <h1>{trattaBA.tratta}</h1>
-      {trattaBA.treni.map((treno) => (
+      {trattaBA.trains.map((treno) => (
         <div key={treno.numeroTreno}>
-          {treno.origine +
+          {treno.categoria +
+            " " +
+            treno.origine +
             " - " +
             treno.destinazione +
             " rit:" +
