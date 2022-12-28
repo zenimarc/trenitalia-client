@@ -9,6 +9,7 @@ import TrainsByStations from "./FindTrainNumbersByStations";
 
 // import routes
 import HomePage from "./HomePage";
+import Infomobilita from "./Infomobilita";
 import RiepilogoTreno from "./RiepilogoTreno";
 import SyncedTrains from "./SyncedTrains";
 
@@ -23,6 +24,7 @@ const Pages = () => {
         <Route path="/findByStations" component={TrainsByStations} />
         <Route path="/addByNumber" component={AddTrainByNumber} />
         <Route path="/followed" component={SyncedTrains} />
+        <Route path="/infomobilita" component={Infomobilita} />
         <Route path="/stats" component={HomePage} />
         <Route path="/new" component={HomePage} />
         <Route path="/edit/:id" component={HomePage} />

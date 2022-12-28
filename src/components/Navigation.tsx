@@ -60,6 +60,9 @@ const Navigation = () => {
         <li>
           <Link to="/followed">Treni Seguiti</Link>
         </li>
+        <li>
+          <Link to="/infomobilita">Infomobilità</Link>
+        </li>
       </NavList>
     </Nav>
   );
