@@ -3,8 +3,8 @@ const API = "http://www.viaggiatreno.it/infomobilita/resteasy/viaggiatreno";
 export const ViaggiaTrenoAPI = () => {
   const getStations = async () => {
     const url = process.env.REACT_APP_API_URI + "/viaggiatreno/elencoStazioni";
-    const data = await fetch(url);
-    const dataJson = await data.json();
+    const resp = await fetch(url);
+    const dataJson = await resp.json();
     return dataJson;
   };
   const getTratte = async () => {

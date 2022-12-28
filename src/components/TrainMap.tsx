@@ -27,7 +27,7 @@ let DefaultIcon = L.icon({
 L.Marker.prototype.options.icon = DefaultIcon;
 
 const TrainMap = () => {
-  const [stationsList, setStaionsList] = useState<ViaggiaTrenoStationsType[]>(
+  const [stationsList, setStationsList] = useState<ViaggiaTrenoStationsType[]>(
     []
   );
   const [tratte, setTratte] = useState<ViaggiaTrenoTrattaType[]>([]);
@@ -49,6 +49,7 @@ const TrainMap = () => {
     ritardoMedioCircolante: 0,
   });
   const [isLoading, setIsLoading] = useState(true);
+  const [isError, setIsError] = useState(false);
 
   //console.log("stationlist: ", stationsList);
   //console.log("tratte", tratte);
@@ -99,105 +100,117 @@ const TrainMap = () => {
   };
 
   useEffect(() => {
-    async function fetchData() {
-      const viaggiaTrenoAPI = ViaggiaTrenoAPI();
-      viaggiaTrenoAPI.getStations().then(setStaionsList);
-      viaggiaTrenoAPI.getMeteo().then(setDatiMeteo);
-      const tratte: ViaggiaTrenoTrattaType[] =
-        await viaggiaTrenoAPI.getTratte();
-      setTratte(tratte);
-      const filteredTratte = getCopyNoDuplicates(tratte);
-      const listaTupleTratteOrig = filteredTratte.map((tratta) => [
-        tratta.trattaAB,
-        tratta.trattaBA,
-      ]);
-      const listaTupleTratte = removeCouplesDuplicates(listaTupleTratteOrig);
-      /* console.log(
+    const fetchData = async () => {
+      try {
+        const viaggiaTrenoAPI = ViaggiaTrenoAPI();
+        const stationsList = await viaggiaTrenoAPI.getStations();
+        setStationsList(stationsList);
+        const meteoData = await viaggiaTrenoAPI.getMeteo();
+        setDatiMeteo(meteoData);
+        const tratte: ViaggiaTrenoTrattaType[] =
+          await viaggiaTrenoAPI.getTratte();
+        setTratte(tratte);
+        const filteredTratte = getCopyNoDuplicates(tratte);
+        const listaTupleTratteOrig = filteredTratte.map((tratta) => [
+          tratta.trattaAB,
+          tratta.trattaBA,
+        ]);
+        const listaTupleTratte = removeCouplesDuplicates(listaTupleTratteOrig);
+        /* console.log(
         "rimosso couple duplicates tupletratte",
         listaTupleTratteOrig.length,
         listaTupleTratte.length
       ); */
-      //console.log("sDDDD", tratte.length, filteredTratte.length);
-      const tasks = listaTupleTratte.map((tuplaTratte) => {
-        return async () => {
-          return await viaggiaTrenoAPI.getDettaglioTratta(
-            tuplaTratte[0],
-            tuplaTratte[1]
-          );
-        };
-      });
-      //.slice(0, 10);
-      //console.log("tasks", tasks);
-      const limit = pLimit(5);
-      const results: ViaggiaTrenoDettaglioTrattaRespType[] = await Promise.all(
-        tasks.map((task) => limit(() => task()))
-      );
-      /* console.log("risolti: ", results);
-      console.log("tupletratte: ", listaTupleTratte); */
-      const trattaNumNameDict: Record<number, ViaggiaTrenoDettaglioTrattaType> =
-        {};
-      const resultsTrainPartMerged = results.reduce((accum, current, idx) => {
-        //updating the numTratta - NameTratta disctionary map
-        const tratta1 = current[0];
-        const numTratta1 = listaTupleTratte[idx][0];
-        const tratta2 = current[1];
-        const numTratta2 = listaTupleTratte[idx][1];
-        trattaNumNameDict[numTratta1] = tratta1;
-        trattaNumNameDict[numTratta2] = tratta2;
-        //console.log(numTratta1, " corrisponde a ", nameTratta1);
-        return [...accum, ...current[0].treni, ...current[1].treni];
-      }, [] as ViaggiaTrenoDettaglioTrattaTypeInner[]);
-      /* console.log("mappaTrattaID", trattaNumNameDict);
-      console.log("resultsTrainPartMerged", resultsTrainPartMerged); */
-      const tratteDataDict: DatiDictAggregPerTrattaType = {};
-      let maxNumberCirculatingPerTratta = 1;
-      for (const trenoInTratta of resultsTrainPartMerged) {
-        // i'm computing the properties of each tratta incrementally while i see trains appartaining to that tratta
-        if (trenoInTratta.tratta in tratteDataDict) {
-          // append trenoInTratta to the array associated with the key in tratteDataDict
-          const { numberOfTrains, totalDelay } =
-            tratteDataDict[trenoInTratta.tratta];
-          const { ritardo: newDelay } = trenoInTratta;
-          tratteDataDict[trenoInTratta.tratta].averageDelay =
-            calcAverageIncrementally(newDelay, totalDelay, numberOfTrains);
-          tratteDataDict[trenoInTratta.tratta].numberOfTrains =
-            numberOfTrains + 1;
-          tratteDataDict[trenoInTratta.tratta].totalDelay =
-            totalDelay + newDelay;
-          // update maxProperties numberoftrains
-          if (
-            tratteDataDict[trenoInTratta.tratta].numberOfTrains >
-            maxNumberCirculatingPerTratta
-          ) {
-            maxNumberCirculatingPerTratta =
-              tratteDataDict[trenoInTratta.tratta].numberOfTrains;
-          }
-
-          tratteDataDict[trenoInTratta.tratta].trains.push(trenoInTratta);
-        } else {
-          // create a new key in tratteDataDict and initialize its associated array with trenoInTratta
-          tratteDataDict[trenoInTratta.tratta] = {
-            trains: [trenoInTratta],
-            numberOfTrains: 1,
-            totalDelay: trenoInTratta.ritardo,
-            averageDelay: trenoInTratta.ritardo,
+        //console.log("sDDDD", tratte.length, filteredTratte.length);
+        const tasks = listaTupleTratte.map((tuplaTratte) => {
+          return async () => {
+            return await viaggiaTrenoAPI.getDettaglioTratta(
+              tuplaTratte[0],
+              tuplaTratte[1]
+            );
           };
+        });
+        //.slice(0, 10);
+        //console.log("tasks", tasks);
+        const limit = pLimit(5);
+        const results: ViaggiaTrenoDettaglioTrattaRespType[] =
+          await Promise.all(tasks.map((task) => limit(() => task())));
+        //se carichi risultati stored in db, fai sì di caricare esattamnrte results. poi tutto uguale
+        /* console.log("risolti: ", results);
+      console.log("tupletratte: ", listaTupleTratte); */
+        const trattaNumNameDict: Record<
+          number,
+          ViaggiaTrenoDettaglioTrattaType
+        > = {};
+        const resultsTrainPartMerged = results.reduce((accum, current, idx) => {
+          //updating the numTratta - NameTratta disctionary map
+          const tratta1 = current[0];
+          const numTratta1 = listaTupleTratte[idx][0];
+          const tratta2 = current[1];
+          const numTratta2 = listaTupleTratte[idx][1];
+          trattaNumNameDict[numTratta1] = tratta1;
+          trattaNumNameDict[numTratta2] = tratta2;
+          //console.log(numTratta1, " corrisponde a ", nameTratta1);
+          return [...accum, ...current[0].treni, ...current[1].treni];
+        }, [] as ViaggiaTrenoDettaglioTrattaTypeInner[]);
+        /* console.log("mappaTrattaID", trattaNumNameDict);
+      console.log("resultsTrainPartMerged", resultsTrainPartMerged); */
+        const tratteDataDict: DatiDictAggregPerTrattaType = {};
+        let maxNumberCirculatingPerTratta = 1;
+        for (const trenoInTratta of resultsTrainPartMerged) {
+          // i'm computing the properties of each tratta incrementally while i see trains appartaining to that tratta
+          if (trenoInTratta.tratta in tratteDataDict) {
+            // append trenoInTratta to the array associated with the key in tratteDataDict
+            const { numberOfTrains, totalDelay } =
+              tratteDataDict[trenoInTratta.tratta];
+            const { ritardo: newDelay } = trenoInTratta;
+            tratteDataDict[trenoInTratta.tratta].averageDelay =
+              calcAverageIncrementally(newDelay, totalDelay, numberOfTrains);
+            tratteDataDict[trenoInTratta.tratta].numberOfTrains =
+              numberOfTrains + 1;
+            tratteDataDict[trenoInTratta.tratta].totalDelay =
+              totalDelay + newDelay;
+            // update maxProperties numberoftrains
+            if (
+              tratteDataDict[trenoInTratta.tratta].numberOfTrains >
+              maxNumberCirculatingPerTratta
+            ) {
+              maxNumberCirculatingPerTratta =
+                tratteDataDict[trenoInTratta.tratta].numberOfTrains;
+            }
+
+            tratteDataDict[trenoInTratta.tratta].trains.push(trenoInTratta);
+          } else {
+            // create a new key in tratteDataDict and initialize its associated array with trenoInTratta
+            tratteDataDict[trenoInTratta.tratta] = {
+              trains: [trenoInTratta],
+              numberOfTrains: 1,
+              totalDelay: trenoInTratta.ritardo,
+              averageDelay: trenoInTratta.ritardo,
+            };
+          }
         }
+        //console.log("risultato finito div per tratta", tratteDataDict);
+        setDatiAggregTratte({
+          maxCirculatingPerTratta: maxNumberCirculatingPerTratta,
+          tratte: tratteDataDict,
+        });
+        const { enrichedData: trattaNumNameDictEnriched, leaderBoard } =
+          computeStatsAndAddPlusLeaderboard(trattaNumNameDict);
+        setTratteNumTrattaMap(trattaNumNameDictEnriched);
+        setLeaderBoard(leaderBoard);
+        setIsLoading(false);
+      } catch (e) {
+        setIsError(true);
       }
-      //console.log("risultato finito div per tratta", tratteDataDict);
-      setDatiAggregTratte({
-        maxCirculatingPerTratta: maxNumberCirculatingPerTratta,
-        tratte: tratteDataDict,
-      });
-      const { enrichedData: trattaNumNameDictEnriched, leaderBoard } =
-        computeStatsAndAddPlusLeaderboard(trattaNumNameDict);
-      setTratteNumTrattaMap(trattaNumNameDictEnriched);
-      setLeaderBoard(leaderBoard);
-      setIsLoading(false);
-    }
+    };
 
     fetchData();
   }, []);
+
+  if (isError) {
+    <div>Error, try refreshing the page</div>;
+  }
 
   if (isLoading) {
     return <div>Loading...</div>;
