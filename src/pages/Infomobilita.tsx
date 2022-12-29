@@ -33,7 +33,7 @@ const Infomobilita: React.FC = () => {
   const history = useHistory();
 
   const parsedJson = data && JSON.parse(data.infomobilita);
-  const avvisi = parsedJson?.output;
+  const avvisi = parsedJson;
 
   const onChange: DatePickerProps["onChange"] = (date, dateString) => {
     console.log(date, dateString);
